@@ -109,7 +109,7 @@ class Pytorch_RetinaFace:
             bbox_infos.append(((original_crop_x2-original_crop_x1, original_crop_y2-original_crop_y1),(original_crop_x1, original_crop_y1, original_crop_x2, original_crop_y2)))
         return cropped_imgs, bbox_infos
 
-    def detect_faces(self, img, direction='left_to_right'):
+    def detect_faces(self, img):
         resize = 1
 
         if len(img.shape) == 4 and img.shape[0] == 1:
@@ -160,16 +160,6 @@ class Pytorch_RetinaFace:
         landms = landms[order]
         scores = scores[order]
 
-        # # Perform NMS
-        # dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
-        # keep = py_cpu_nms(dets, self.nms_threshold)
-        # dets = dets[keep, :]
-        # landms = landms[keep]
-
-        # # Keep top-K faster NMS
-        # dets = dets[:self.keep_top_k, :]
-        # landms = landms[:self.keep_top_k, :]
-
         # Perform NMS
         dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
         keep = py_cpu_nms(dets, self.nms_threshold)
@@ -180,43 +170,5 @@ class Pytorch_RetinaFace:
         dets = dets[:self.keep_top_k, :]
         landms = landms[:self.keep_top_k, :]
 
-        # Sort detections based on direction
-        if direction == 'left_to_right':
-            # Sort based on x-coordinate (left to right)
-            order = np.argsort(dets[:, 0])  # Sort by x1 coordinate
-        elif direction == 'right_to_left':
-            # Sort based on x-coordinate (right to left)
-            order = np.argsort(-dets[:, 0])  # Sort by negative x1 coordinate
-        elif direction == 'top_to_bottom':
-            # Sort based on y-coordinate (top to bottom)
-            order = np.argsort(dets[:, 1])  # Sort by y1 coordinate
-        elif direction == 'bottom_to_top':
-            # Sort based on y-coordinate (bottom to top)
-            order = np.argsort(-dets[:, 1])  # Sort by negative y1 coordinate
-        
-        # Apply the sorting
-        dets = dets[order]
-        landms = landms[order]
-
-        # Filter faces based on position and viewing direction
-        # if len(dets) > 1:
-        #     # Calculate center x-coordinate for each detection
-        #     centers_x = (dets[:, 0] + dets[:, 2]) / 2
-            
-        #     if direction == 'left_to_right':
-        #         # Keep faces that are oriented towards the right
-        #         # You can adjust these thresholds as needed
-        #         face_width = dets[:, 2] - dets[:, 0]
-        #         face_height = dets[:, 3] - dets[:, 1]
-        #         aspect_ratio = face_width / face_height
-                
-        #         # Filter based on aspect ratio and position
-        #         valid_faces = aspect_ratio >= 0.8  # Assuming relatively front-facing faces
-        #         dets = dets[valid_faces]
-        #         landms = landms[valid_faces]
-
         dets = np.concatenate((dets, landms), axis=1)
         return dets
-
-        # dets = np.concatenate((dets, landms), axis=1)
-        # return dets
